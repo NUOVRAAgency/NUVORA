@@ -175,6 +175,26 @@ export default function AdminDashboard() {
     await loadLeads();
   };
 
+  const changeLeadStatus = async (id, status) => {
+    const fd = new FormData();
+    fd.append("status", status);
+    try {
+      await api.patch(`/leads/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
+      toast.success("تم تحديث الحالة");
+    } catch {
+      toast.error("فشل تحديث الحالة");
+    }
+  };
+
+  const STATUS_LABEL = { new: "جديد", contacted: "تم التواصل", won: "تم الكسب", lost: "مفقود" };
+  const STATUS_CLASS = {
+    new: "bg-[#E6F2F5] text-[#0A3D42]",
+    contacted: "bg-amber-50 text-amber-700",
+    won: "bg-emerald-50 text-emerald-700",
+    lost: "bg-rose-50 text-rose-700",
+  };
+
   const tabs = [
     { id: "projects", label: "المشاريع", icon: <FolderKanban className="w-4 h-4" /> },
     { id: "leads", label: "الطلبات", icon: <Inbox className="w-4 h-4" /> },
@@ -257,13 +277,14 @@ export default function AdminDashboard() {
                   <th className="p-3">الهاتف</th>
                   <th className="p-3">الخدمة</th>
                   <th className="p-3">الرسالة</th>
+                  <th className="p-3">الحالة</th>
                   <th className="p-3">التاريخ</th>
                   <th className="p-3"></th>
                 </tr>
               </thead>
               <tbody>
                 {leads.length === 0 && (
-                  <tr><td colSpan={7} className="p-8 text-center text-[#3a5358]">لا توجد طلبات حتى الآن</td></tr>
+                  <tr><td colSpan={8} className="p-8 text-center text-[#3a5358]">لا توجد طلبات حتى الآن</td></tr>
                 )}
                 {leads.map((l) => (
                   <tr key={l.id} className="border-t border-[#EAF1F2]" data-testid={`lead-row-${l.id}`}>
@@ -272,8 +293,26 @@ export default function AdminDashboard() {
                     <td className="p-3" dir="ltr">{l.phone || "-"}</td>
                     <td className="p-3">{l.service}</td>
                     <td className="p-3 max-w-xs truncate" title={l.message}>{l.message}</td>
+                    <td className="p-3">
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-block w-fit px-2 py-1 rounded-md text-xs font-semibold ${STATUS_CLASS[l.status] || STATUS_CLASS.new}`} data-testid={`lead-status-badge-${l.id}`}>
+                          {STATUS_LABEL[l.status] || l.status}
+                        </span>
+                        <select
+                          data-testid={`lead-status-select-${l.id}`}
+                          value={l.status || "new"}
+                          onChange={(e) => changeLeadStatus(l.id, e.target.value)}
+                          className="light-input text-xs py-1 px-2"
+                        >
+                          <option value="new">جديد</option>
+                          <option value="contacted">تم التواصل</option>
+                          <option value="won">تم الكسب</option>
+                          <option value="lost">مفقود</option>
+                        </select>
+                      </div>
+                    </td>
                     <td className="p-3 text-xs text-[#3a5358]" dir="ltr">{new Date(l.created_at).toLocaleString()}</td>
-                    <td className="p-3"><button onClick={() => removeLead(l.id)} className="text-red-600 hover:underline text-sm">حذف</button></td>
+                    <td className="p-3"><button onClick={() => removeLead(l.id)} data-testid={`lead-delete-${l.id}`} className="text-red-600 hover:underline text-sm">حذف</button></td>
                   </tr>
                 ))}
               </tbody>

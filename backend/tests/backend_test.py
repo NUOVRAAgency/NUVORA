@@ -140,6 +140,70 @@ def test_delete_lead(session, auth_headers):
     assert not any(l["id"] == pytest.lead_id for l in r2.json())
 
 
+# ---------- Lead status workflow (iteration 3) ----------
+def _create_lead(session, suffix="status"):
+    payload = {
+        "name": f"TEST_{suffix}",
+        "email": f"test_{suffix}@example.com",
+        "phone": "+10000000000",
+        "service": "websites",
+        "message": "Status workflow test message.",
+    }
+    r = session.post(f"{API}/leads", json=payload, timeout=15)
+    assert r.status_code == 200, r.text
+    return r.json()["id"]
+
+
+def test_create_lead_with_empty_notify_env_does_not_throw(session):
+    """notify_lead must be best-effort when env vars empty — response still 200 + ok+id."""
+    lid = _create_lead(session, "notify")
+    assert lid
+    # cleanup will happen via admin delete in next tests; do it now
+    r = session.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}, timeout=15)
+    tok = r.json()["access_token"]
+    session.delete(f"{API}/leads/{lid}", headers={"Authorization": f"Bearer {tok}"}, timeout=15)
+
+
+@pytest.mark.parametrize("status", ["contacted", "won", "lost", "new"])
+def test_patch_lead_status_valid(session, auth_headers, status):
+    lid = _create_lead(session, f"valid_{status}")
+    try:
+        r = session.patch(f"{API}/leads/{lid}", headers=auth_headers, data={"status": status}, timeout=15)
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["ok"] is True
+        assert body["status"] == status
+        # verify persistence
+        r2 = session.get(f"{API}/leads", headers=auth_headers, timeout=15)
+        found = [l for l in r2.json() if l["id"] == lid]
+        assert found and found[0]["status"] == status
+    finally:
+        session.delete(f"{API}/leads/{lid}", headers=auth_headers, timeout=15)
+
+
+def test_patch_lead_status_invalid(session, auth_headers):
+    lid = _create_lead(session, "invalid")
+    try:
+        r = session.patch(f"{API}/leads/{lid}", headers=auth_headers, data={"status": "garbage"}, timeout=15)
+        assert r.status_code == 400, r.text
+    finally:
+        session.delete(f"{API}/leads/{lid}", headers=auth_headers, timeout=15)
+
+
+def test_patch_lead_status_unauth(session, auth_headers):
+    lid = _create_lead(session, "unauth")
+    try:
+        r = requests.patch(f"{API}/leads/{lid}", data={"status": "contacted"}, timeout=15)
+        assert r.status_code == 401, f"expected 401 got {r.status_code}"
+    finally:
+        session.delete(f"{API}/leads/{lid}", headers=auth_headers, timeout=15)
+
+
+def test_patch_lead_status_not_found(session, auth_headers):
+    r = session.patch(f"{API}/leads/does-not-exist", headers=auth_headers, data={"status": "contacted"}, timeout=15)
+    assert r.status_code == 404
+
+
 # ---------- Project CRUD (admin) ----------
 def test_project_crud_bilingual(session, auth_headers):
     # CREATE with all four bilingual fields

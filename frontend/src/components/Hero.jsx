@@ -4,13 +4,17 @@ import { useLang } from "../contexts/LangContext";
 import ParticleField from "./ParticleField";
 
 export default function Hero() {
-  const { t, dir } = useLang();
+  const { t, dir, lang } = useLang();
   const ArrowIcon = dir === "rtl" ? ArrowLeft : ArrowRight;
 
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  const headlineStyle = lang === "en"
+    ? { whiteSpace: "nowrap", fontSize: "clamp(2.6rem, 13vw, 9rem)", lineHeight: 0.95 }
+    : undefined;
 
   return (
     <section id="home" data-testid="hero-section" className="relative overflow-hidden bg-[#0A3D42] text-white pt-24 md:pt-28">
@@ -29,7 +33,8 @@ export default function Hero() {
         <div className="headline-frame mt-10 md:mt-14 px-6 md:px-12 py-10 md:py-16 text-center">
           <h1
             data-testid="hero-headline"
-            className="font-display font-black tracking-tight leading-[0.95] text-white text-6xl sm:text-7xl md:text-8xl lg:text-9xl"
+            style={headlineStyle}
+            className={`font-display font-black tracking-tight leading-[0.95] text-white ${lang === "en" ? "" : "text-6xl sm:text-7xl md:text-8xl lg:text-9xl"}`}
           >
             {t.hero.title}
           </h1>

@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 3 (auto-lang detect, SEO/OG, notify_lead best-effort, lead status workflow, EN single-line hero, 3-icon contact row). Backend: extended /app/backend/tests/backend_test.py from 15 → 23 tests, all passing (added notify_lead-with-empty-env smoke test, PATCH /api/leads/{id} valid/invalid/unauth/404 + parametrized over {new,contacted,won,lost}). Frontend: validated index.html SEO meta (og:title contains NUVORA, og:image present, twitter:card=summary_large_image, canonical link, JSON-LD Organization with name=NUVORA); auto-language detection switches html dir to ltr/rtl correctly; manual lang-toggle-btn persists 'mergent_lang' in localStorage across reload (override beats auto-detect); hero-headline 'Change Makers' renders on ONE line in EN at desktop 1920px (height 137px) AND mobile 390px (height 48px) with computed whiteSpace=nowrap; contact-section contains exactly 3 children with testids icon-call (href tel:), icon-support (href https://wa.me/), icon-email (href mailto:); admin Leads tab shows lead-status-badge-{id} and lead-status-select-{id}, changing select calls PATCH which updates the badge label (e.g. 'جديد' → 'تم التواصل'), persists after reload, and status 'won' verified via API.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/leads", "issue": "notify_lead executes synchronously inside the request handler (requests.post + smtplib.SMTP). With empty env vars it's a no-op (fast), but if Telegram/SMTP env vars are later set the lead POST will block for up to ~10s on Telegram timeout and ~SMTP connection time. Consider offloading to BackgroundTasks or asyncio.create_task for true best-effort non-blocking behavior."},
+      {"endpoint": "PATCH /api/leads/{id}", "issue": "Accepts status only via multipart/form-data (Form(...)). Frontend changeLeadStatus uses URLSearchParams which works, but JSON body callers would get 422. A small Pydantic body model would be more idiomatic."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py notify_lead is synchronous inside an async POST handler — `requests.post(..., timeout=10)` and `smtplib.SMTP(...)` will block the event loop when keys ARE configured. Move to FastAPI BackgroundTasks or run_in_executor.",
+    "PATCH /api/leads/{id} uses Form(...) so the only supported content-type is multipart/form-data or application/x-www-form-urlencoded. A documented LeadStatusIn(BaseModel) JSON body would be cleaner and consistent with the rest of the API.",
+    "LangContext.detectBrowserLang region heuristic is fine but the ARABIC_REGIONS array includes 'ar' as a 'region' which is actually the language sub-tag; harmless but slightly confusing. Also region matching uses ISO 3166-1 alpha-2 lowercase which matches navigator.language conventions — OK.",
+    "index.html canonical points to https://nuvora.preview.emergentagent.com/ but REACT_APP_BACKEND_URL is https://digital-mergent.preview.emergentagent.com — these differ. If only one is the production host, the other meta values should match it (og:url/canonical/JSON-LD url all need to point to the real prod URL).",
+    "server.py still defines project_doc_to_out twice (legacy line + noqa: F811 override). Should be merged."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (added: test_create_lead_with_empty_notify_env_does_not_throw, parametrized test_patch_lead_status_valid[contacted|won|lost|new], test_patch_lead_status_invalid (400), test_patch_lead_status_unauth (401), test_patch_lead_status_not_found (404))"
+  ],
+  "success_rate": {"backend": "100% (23/23 pytest)", "frontend": "100% of tested flows pass (SEO meta + auto-lang detect + lang persistence + EN single-line hero @ 1920 & 390 + 3-icon contact row + admin lead-status workflow with API persistence after reload)"},
+  "test_credentials": "admin@mergent.com / Admin@123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created several TEST_ leads via API as part of the parametrized status tests and the admin UI test; all are deleted via DELETE /api/leads/{id} in test teardown (verified by post-cleanup curl: only the original UI-submission seed lead from iteration_2 remains as 1 lead in the system).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend now has 23 pytest tests at /app/backend/tests/backend_test.py. PATCH /api/leads/{id} takes status via multipart form (Form(...)), valid set {new,contacted,won,lost}, returns {ok:true,status:...}. notify_lead() is best-effort but synchronous — see action items. Admin lead-status UI testids: lead-status-badge-{id}, lead-status-select-{id}, lead-row-{id}, lead-delete-{id}. Admin login testids: admin-email, admin-password, admin-login-btn (NOT login-email-input). Admin tab testids: tab-projects, tab-leads, tab-settings. localStorage keys: mergent_lang ('ar'|'en'), mergent_token (JWT). Hero EN single-line uses clamp(2.6rem, 13vw, 9rem) + whiteSpace:nowrap. Contact icons: icon-call (tel:), icon-support (https://wa.me/), icon-email (mailto:).",
+  "rca of the issue": "No bugs found in this iteration. All 6 features (auto-lang detect, SEO, notify_lead no-op, lead status workflow, EN single-line hero, 3-icon contact row) work end-to-end."
+}

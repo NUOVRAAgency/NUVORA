@@ -36,6 +36,47 @@ APP_NAME = os.environ.get("APP_NAME", "mergent")
 storage_key: Optional[str] = None
 
 
+def notify_lead(lead: dict) -> None:
+    """Best-effort outbound notification (Telegram + SMTP). Never raises."""
+    text = (
+        f"📩 New NUVORA Consultation Lead\n"
+        f"Name: {lead.get('name')}\n"
+        f"Email: {lead.get('email')}\n"
+        f"Phone: {lead.get('phone') or '-'}\n"
+        f"Service: {lead.get('service')}\n"
+        f"Message: {lead.get('message')}"
+    )
+    tg_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    tg_chat = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if tg_token and tg_chat:
+        try:
+            requests.post(
+                f"https://api.telegram.org/bot{tg_token}/sendMessage",
+                json={"chat_id": tg_chat, "text": text, "disable_web_page_preview": True},
+                timeout=10,
+            )
+        except Exception as e:
+            logger.warning(f"Telegram notify failed: {e}")
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    notify_to = os.environ.get("NOTIFY_EMAIL", "")
+    if smtp_host and notify_to:
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            msg = MIMEText(text, "plain", "utf-8")
+            msg["Subject"] = f"NUVORA: New lead from {lead.get('name')}"
+            msg["From"] = os.environ.get("SMTP_USER") or notify_to
+            msg["To"] = notify_to
+            with smtplib.SMTP(smtp_host, int(os.environ.get("SMTP_PORT", "587"))) as s:
+                s.starttls()
+                if os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASS"):
+                    s.login(os.environ["SMTP_USER"], os.environ["SMTP_PASS"])
+                s.send_message(msg)
+        except Exception as e:
+            logger.warning(f"SMTP notify failed: {e}")
+
+
+
 def init_storage():
     global storage_key
     if storage_key:
@@ -359,6 +400,11 @@ async def create_lead(payload: LeadIn):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.leads.insert_one(doc.copy())
+    # Best-effort outbound notification (Telegram/Email). Never blocks the response.
+    try:
+        notify_lead(doc)
+    except Exception as e:
+        logger.warning(f"notify_lead error: {e}")
     return {"ok": True, "id": doc["id"]}
 
 
@@ -378,8 +424,12 @@ async def delete_lead(lead_id: str, user: dict = Depends(get_current_admin)):
 
 @api.patch("/leads/{lead_id}")
 async def update_lead_status(lead_id: str, status: str = Form(...), user: dict = Depends(get_current_admin)):
-    await db.leads.update_one({"id": lead_id}, {"$set": {"status": status}})
-    return {"ok": True}
+    if status not in ("new", "contacted", "won", "lost"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    res = await db.leads.update_one({"id": lead_id}, {"$set": {"status": status}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return {"ok": True, "status": status}
 
 
 # ---------- Startup ----------
