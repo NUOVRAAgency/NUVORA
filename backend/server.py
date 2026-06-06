@@ -21,7 +21,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 # ---------- Setup ----------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger("mergent")
+logger = logging.getLogger("nuvora")
 
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -30,10 +30,38 @@ db = client[os.environ["DB_NAME"]]
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALG = "HS256"
 
-STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
-APP_NAME = os.environ.get("APP_NAME", "mergent")
-storage_key: Optional[str] = None
+APP_NAME = os.environ.get("APP_NAME", "nuvora")
+
+# ---------- Local file storage (portable, no external dependencies) ----------
+# Files are stored under UPLOAD_DIR (default: backend/uploads) and served via /api/files/{path}.
+# Override the storage location with the UPLOAD_DIR environment variable when self-hosting
+# (e.g. UPLOAD_DIR=/var/lib/nuvora/uploads).
+UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR") or (ROOT_DIR / "uploads")).resolve()
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _safe_storage_path(relative: str) -> Path:
+    """Resolve a relative storage path under UPLOAD_DIR and prevent path traversal."""
+    target = (UPLOAD_DIR / relative).resolve()
+    if not str(target).startswith(str(UPLOAD_DIR)):
+        raise HTTPException(status_code=400, detail="Invalid path")
+    return target
+
+
+def put_object(path: str, data: bytes, content_type: str = "application/octet-stream") -> dict:
+    target = _safe_storage_path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(data)
+    return {"path": path}
+
+
+def get_object(path: str):
+    target = _safe_storage_path(path)
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    import mimetypes
+    ctype, _ = mimetypes.guess_type(str(target))
+    return target.read_bytes(), ctype or "application/octet-stream"
 
 
 def notify_lead(lead: dict) -> None:
@@ -78,36 +106,12 @@ def notify_lead(lead: dict) -> None:
 
 
 def init_storage():
-    global storage_key
-    if storage_key:
-        return storage_key
-    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
-    resp.raise_for_status()
-    storage_key = resp.json()["storage_key"]
-    return storage_key
+    """Kept for backwards-compatible startup logs. Local filesystem requires no init."""
+    return str(UPLOAD_DIR)
 
 
-def put_object(path: str, data: bytes, content_type: str) -> dict:
-    key = init_storage()
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data,
-        timeout=120,
-    )
-    resp.raise_for_status()
-    return resp.json()
-
-
-def get_object(path: str):
-    key = init_storage()
-    resp = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key},
-        timeout=60,
-    )
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+def _legacy_remove_init():
+    return None
 
 
 # ---------- Helpers ----------
@@ -275,10 +279,7 @@ async def upload_logo(file: UploadFile = File(...), user: dict = Depends(get_cur
 # ---------- Files ----------
 @api.get("/files/{path:path}")
 async def serve_file(path: str):
-    try:
-        data, content_type = get_object(path)
-    except requests.HTTPError:
-        raise HTTPException(status_code=404, detail="File not found")
+    data, content_type = get_object(path)
     return Response(content=data, media_type=content_type)
 
 
@@ -541,11 +542,7 @@ async def on_startup():
     await seed_admin()
     await seed_settings()
     await seed_projects()
-    try:
-        init_storage()
-        logger.info("Object storage ready")
-    except Exception as e:
-        logger.error(f"Storage init failed: {e}")
+    logger.info(f"Local upload directory ready: {UPLOAD_DIR}")
 
 
 # Override project serialization to also use external URL if available
