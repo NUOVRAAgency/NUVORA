@@ -1,0 +1,151 @@
+{
+  "theme": "Hybrid (Dark Hero to Light Content)",
+  "archetype": "Premium Digital Agency (Archetype 4/5 Hybrid)",
+  "language_and_direction": {
+    "default": "ar",
+    "direction": "rtl",
+    "font_family_arabic_headings": "Cairo",
+    "font_family_arabic_body": "Tajawal"
+  },
+  "colors": {
+    "header_background": {
+      "hex": "#E6F2F5",
+      "hsl": "hsl(200, 40%, 94%)",
+      "tailwind_class": "bg-[#E6F2F5]",
+      "description": "Light-tinted steel/ice blue"
+    },
+    "hero_background": {
+      "hex": "#0A3D42",
+      "hsl": "hsl(187, 87%, 15%)",
+      "tailwind_class": "bg-[#0A3D42]",
+      "description": "Deep premium Teal/Cyan shade"
+    },
+    "portfolio_background": {
+      "hex": "#FFFFFF",
+      "hsl": "hsl(0, 0%, 100%)",
+      "tailwind_class": "bg-white",
+      "description": "Pure white canvas"
+    },
+    "text_contrast": {
+      "hex": "#112325",
+      "hsl": "hsl(187, 87%, 10%)",
+      "tailwind_class": "text-[#112325]",
+      "description": "Dark teal/charcoal corporate color"
+    },
+    "text_on_dark": {
+      "hex": "#FFFFFF",
+      "hsl": "hsl(0, 0%, 100%)",
+      "tailwind_class": "text-white"
+    }
+  },
+  "typography": {
+    "headings": {
+      "font": "Cairo, sans-serif",
+      "weights": ["700", "800", "900"],
+      "styling": "tracking-tight leading-none"
+    },
+    "body": {
+      "font": "Tajawal, sans-serif",
+      "weights": ["400", "500"],
+      "styling": "leading-relaxed"
+    }
+  },
+  "layout_and_spacing": {
+    "generous_spacing": true,
+    "container_padding": "px-6 md:px-12 lg:px-24",
+    "section_spacing": "py-24 md:py-32",
+    "border_radius": {
+      "default": "12px",
+      "classes": "rounded-xl"
+    },
+    "shadows": {
+      "soft_3d": "shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.16)] transition-shadow duration-300",
+      "button_3d": "shadow-[0_4px_14px_0_rgba(0,0,0,0.25)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.23)] transition-all duration-200"
+    }
+  },
+  "components": {
+    "header": {
+      "background": "bg-[#E6F2F5]/90 backdrop-blur-xl",
+      "layout": "Flex justify-between items-center, fixed top-0 w-full z-50",
+      "elements": {
+        "right": "Dynamic Agency Branding Logo/Text",
+        "left": "3D rounded rectangular language switcher (Globe icon + 'EN'), 3D square hamburger menu (3 horizontal lines, 12px rounded edges)",
+        "drawer": "Slides out from the side, vertical nav [الرئيسية, أعمالنا, طلب استشارة, تواصل معنا], elegant 'X' close button"
+      }
+    },
+    "hero": {
+      "background": "bg-[#0A3D42]",
+      "visuals": {
+        "particles": "Slow floating particle/spray network using react-tsparticles"
+      },
+      "elements": {
+        "ai_pill": "Thin transparent rounded pill with glowing AI Star icon and text 'وكالة رقمية رائدة', 2cm below header",
+        "headline_container": "Edge-to-edge wide horizontal container with smooth rounded borders",
+        "headline": "Massive bold text 'صناع تغيير'",
+        "subheadline": "Clean white text 'نحول أفكارك الرقمية إلى واقع ملموس بتصاميم استثنائية وحلول تقنية متقدمة'",
+        "buttons": {
+          "primary": "Solid White, dark typography, 12px radius, arrow icon",
+          "secondary": "Transparent outlined, white text, 12px radius"
+        }
+      }
+    },
+    "portfolio_showcase": {
+      "background": "bg-white text-[#112325]",
+      "header": "Title 'أعمالنا' and subtext 'استعرض مجموعة من أفضل المشاريع التي أنجزناها لعملائنا'",
+      "filters": {
+        "tier_1": "Segmented filter: [الكل, السوق العربي, السوق الأجنبي]",
+        "tier_2": "Segmented filter: [الكل, مواقع إلكترونية, متاجر رقمية, أخرى]"
+      },
+      "grid": "Responsive bento grid, soft 3D shadows, 12px rounded corners",
+      "empty_state": "لا توجد مشاريع في هذه الفئة"
+    },
+    "consultation_form": {
+      "layout": "Clean horizontal centered container",
+      "title": "اطلب مشروعك الآن",
+      "fields": "Name, email, phone (optional), service type dropdown, details textarea",
+      "submit_button": "3D button with paper airplane icon 'إرسال الطلب'"
+    },
+    "contact_section": {
+      "header": "Title 'دعنا نتحدث' + 'للتواصل معنا' + paragraph",
+      "cards": "Three Cards with 3D depth. Phone ('اضغط للاتصال'), Support ('متاحون على مدار الساعة'), Email"
+    },
+    "footer": {
+      "style": "Minimalist footer with 'mergent' brand and 2026 copyright"
+    },
+    "admin_dashboard": {
+      "auth": "JWT secured layout at /admin",
+      "features": [
+        "CRUD for Portfolio Projects (Title, Image Upload, Market Type, Project Category, Live URL)",
+        "Upload Agency Logo",
+        "Edit WhatsApp/Phone/Email globally",
+        "Leads Inbox (table view of consultation requests)"
+      ]
+    }
+  },
+  "image_urls": {
+    "portfolio_mockups": [
+      {
+        "url": "https://images.pexels.com/photos/326514/pexels-photo-326514.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Website Design Mockup"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1623824204241-f851d3bcfaf5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwzfHxtb2JpbGUlMjBhcHAlMjBtb2NrdXB8ZW58MHx8fHwxNzgwNzEzNDQzfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Mobile App Interface Mockup"
+      },
+      {
+        "url": "https://images.pexels.com/photos/5632391/pexels-photo-5632391.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Ecommerce Store Design"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Apply dir='rtl' globally in the root HTML tag.",
+    "Implement the floating WhatsApp widget in the bottom corner with a z-index ensuring it sits above everything.",
+    "Use 'react-tsparticles' (or 'tsparticles') for the background particle effect in the hero section.",
+    "Do not use generic Shadcn components out-of-the-box without tailoring them to the 12px border radius and 3D shadow guidelines.",
+    "Every button and input must use the dark contrast text (#112325) when placed on the white background.",
+    "All interactive elements MUST have a data-testid attribute for QA automation.",
+    "Fonts 'Cairo' and 'Tajawal' should be imported via Google Fonts or next/font.",
+    "Ensure 'أعمالنا' CTA button is solid white and 'طلب استشارة' is transparent outlined, as strictly defined."
+  ]
+}
