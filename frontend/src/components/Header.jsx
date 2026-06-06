@@ -8,6 +8,8 @@ export default function Header() {
   const { lang, toggle, t } = useLang();
   const { settings, logoUrl } = useSettings();
   const [open, setOpen] = useState(false);
+  const [logoBroken, setLogoBroken] = useState(false);
+  const showLogo = !!logoUrl && !logoBroken;
 
   return (
     <>
@@ -18,8 +20,8 @@ export default function Header() {
         <div className="mx-auto max-w-7xl px-5 md:px-10 h-16 md:h-20 flex items-center justify-between">
           {/* In RTL, "right" appears at the start. Logo at the start side per problem statement (Right side in RTL) */}
           <a href="/" className="flex items-center gap-3" data-testid="brand-logo-link">
-            {logoUrl ? (
-              <img src={logoUrl} alt={settings.agency_name} className="h-9 md:h-10 w-auto" />
+            {showLogo ? (
+              <img src={logoUrl} alt={settings.agency_name} className="h-9 md:h-10 w-auto" onError={() => setLogoBroken(true)} />
             ) : (
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-xl bg-[#0A3D42] text-white font-display text-lg shadow-md">M</span>
