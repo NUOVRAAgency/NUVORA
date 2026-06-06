@@ -13,7 +13,7 @@ import requests
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File, Form, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File, Form, Query, BackgroundTasks
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -388,7 +388,7 @@ async def delete_project(project_id: str, user: dict = Depends(get_current_admin
 
 # ---------- Leads ----------
 @api.post("/leads")
-async def create_lead(payload: LeadIn):
+async def create_lead(payload: LeadIn, background: BackgroundTasks):
     doc = {
         "id": str(uuid.uuid4()),
         "name": payload.name,
@@ -400,11 +400,9 @@ async def create_lead(payload: LeadIn):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.leads.insert_one(doc.copy())
-    # Best-effort outbound notification (Telegram/Email). Never blocks the response.
-    try:
-        notify_lead(doc)
-    except Exception as e:
-        logger.warning(f"notify_lead error: {e}")
+    # Best-effort outbound notification offloaded to a background task so the
+    # client response stays fast even when Telegram/SMTP keys are configured.
+    background.add_task(notify_lead, doc)
     return {"ok": True, "id": doc["id"]}
 
 

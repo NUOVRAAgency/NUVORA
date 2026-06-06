@@ -34,6 +34,15 @@ Build a premium, production-ready full-stack web app for a digital agency named 
 - ✅ Admin dashboard: login, projects CRUD with image upload, settings editor + logo upload, leads inbox table.
 - ✅ Tests passing: backend 13/13 (pytest), frontend Playwright flows verified.
 
+## Updated (2026-06-06 — Iteration 3: Full platform integration)
+- ✅ **Auto language detection** in `LangContext`: navigator.language → ar (when AR locale or region) else en; manual toggle overrides and persists in localStorage `mergent_lang`.
+- ✅ **SEO/OG/Twitter/JSON-LD** meta tags added to `public/index.html` (NUVORA branding, OG image, canonical, Organization schema).
+- ✅ **Lead notifications**: env-driven Telegram + SMTP (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `SMTP_HOST/PORT/USER/PASS`, `NOTIFY_EMAIL`). Runs as FastAPI `BackgroundTasks` so POST `/api/leads` stays fast even when keys are added later. No-op when keys are empty.
+- ✅ **Lead status workflow**: PATCH `/api/leads/{id}` validates status ∈ {new, contacted, won, lost}. Admin Leads table now exposes per-row colored status badge + dropdown select that PATCHes in place.
+- ✅ **Hero EN single-line**: `clamp(2.6rem, 13vw, 9rem)` + `whiteSpace: nowrap`. Verified one-line at 1920px and 390px viewports.
+- ✅ **3-icon radial Contact bar** (Phone / Headset→WhatsApp / Mail) replaces boxed cards. Color-matched to deep teal NUVORA palette. data-testid: `icon-call`, `icon-support`, `icon-email`.
+- ✅ Tests passing: backend 23/23 pytest, Playwright e2e clean (zero UI/integration/design issues).
+
 ## Updated (2026-06-06 — Iteration 2: NUVORA rebrand)
 - ✅ Global rename to **NUVORA** (header, drawer, admin shell, public/index.html title, footer copyright, default settings).
 - ✅ Floating WhatsApp button color changed from green to deep teal `#0A3D42` (NUVORA brand).
