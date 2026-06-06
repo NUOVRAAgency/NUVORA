@@ -1,0 +1,43 @@
+{
+  "summary": "First iteration: backend pytest (13/13 passing) + frontend Playwright e2e for Mergent agency site. Verified homepage hero+badge in Arabic RTL, 9 seeded projects (after cleaning leftover test row), two-tier portfolio filters, contact cards from settings, floating WhatsApp, drawer menu, language toggle (RTL<->LTR), consultation form submission with success toast, /admin guard + login + dashboard tab switching, full admin CRUD on projects, leads admin list + delete, and settings PUT + logo upload.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/login", "issue": "Sets cookie with samesite=none, secure=true unconditionally. Works in deployed HTTPS preview, but inherited session cookies can mask auth checks during testing (worked around in tests by using fresh requests session for unauthenticated cases). The frontend uses Bearer token from localStorage, so cookie is largely redundant."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Header (logo) and AdminDashboard settings logo preview", "issue": "When settings.logo_path is empty, an <img> tag is still rendered next to the agency name, showing a broken-image icon. Should conditionally render <img> only when a real logo URL exists.", "selector": "header img, settings logo preview", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Hero / Header", "issues": ["Broken-image glyph appears in top-right next to 'mergent' due to empty logo_path"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Conditionally render the logo <img> only when settings.logo_path is non-empty (Header.jsx and AdminDashboard settings tab). Use a text/SVG fallback otherwise.",
+    "(Optional) Make cookie samesite/secure conditional on env so local HTTP testing works without the workaround."
+  ],
+  "critical_code_review_comments": [
+    "server.py defines project_doc_to_out twice (line 245 and again at line 463 with # noqa). The second override is correct (uses image_external_url fallback). Cleaner to remove the first definition entirely to avoid confusion.",
+    "CORS_ORIGINS defaults to '*' while allow_credentials=True — browsers reject credentialed requests with wildcard origin. The frontend currently bypasses this by using Bearer header from localStorage (withCredentials disabled per the brief), so it works, but the combination is misleading. Set explicit allowed origins in env for production.",
+    "Admin endpoints accept Optional[UploadFile] but FastAPI may parse missing file as an empty UploadFile in some clients; current handling (`if file is not None`) is fine in practice but worth a unit assertion.",
+    "/api/settings PUT requires at least one field; that is good. But /api/settings/logo updates settings even if file is invalid bytes — would benefit from a content-type/size check.",
+    "create_lead does not enforce service whitelist; any string accepted. Optional enhancement."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (new)"
+  ],
+  "success_rate": {"backend": "100% (13/13 pytest)", "frontend": "100% of tested flows pass; 1 minor cosmetic logo issue"},
+  "test_credentials": "admin@mergent.com / Admin@123 (loaded from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Removed a leftover dummy project (title 'x') that was created by an initial unauthenticated test which inherited the login cookie from a shared session. After cleanup the public /api/projects returns exactly 9 seeded projects. No other seeding done.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test suite at /app/backend/tests/backend_test.py covers health, projects (list+CRUD+auth gating), settings (defaults+update+logo upload), auth (login/me/invalid), and leads (create public + admin list/delete + auth gating). Always use a fresh requests.Session (or no session) for negative auth tests because /api/auth/login sets a samesite=none cookie that the session would otherwise reuse. Site default language is Arabic RTL; lang-toggle-btn switches html dir between rtl and ltr. Admin login route is /admin/login; dashboard tabs use data-testid tab-projects/tab-leads/tab-settings.",
+  "rca of the issue": "Initial pytest run had 2 failures (test_projects_write_requires_auth and test_leads_requires_auth) because they reused the shared `session` fixture that had already authenticated via /api/auth/login, which set an access_token cookie. The backend's get_current_admin reads token from cookie first, then Authorization header, so requests appeared authenticated. Mitigation: rewrote those two tests to use bare `requests` calls instead of the shared session. Backend behavior is correct."
+}
