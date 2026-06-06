@@ -1,0 +1,35 @@
+{
+  "summary": "Iteration 2 (NUVORA rebrand + bilingual portfolio). Backend pytest suite refactored to multipart bilingual form fields: 15/15 passing. Frontend Playwright validation: brand name = NUVORA (header data-testid brand-name + N badge), floating WhatsApp button uses .fab-wa with deep teal rgb(10,61,66) = #0A3D42, footer has clickable tel:/mailto:/https://wa.me/ rows, footer copy reads '© 2026 NUVORA. جميع الحقوق محفوظة.', drawer contains 'NUVORA' brand text, public portfolio renders 9 cards, lang-toggle-btn flips html dir rtl↔ltr and swaps card title+description between AR and EN, admin login works (admin@mergent.com / Admin@123), ProjectForm exposes all four bilingual inputs (project-title-ar-input / project-title-en-input / project-desc-ar-input / project-desc-en-input) and saving via the UI persists all 4 fields in MongoDB (verified by GET /api/projects).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/login", "issue": "Cookie still set with samesite=none + secure=true unconditionally. Cosmetic only; frontend uses Bearer header. Same note as iteration_1."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py still defines project_doc_to_out twice (line 245 and line 504 with # noqa: F811). The override is intentional to add image_external_url fallback but it is confusing — consider merging into a single definition that handles both cases.",
+    "POST /api/projects sets legacy 'title' = title_ar on every create, but PUT only syncs legacy 'title' when title_ar is updated. If a caller updates only title_en, the legacy 'title' becomes stale relative to title_en. Acceptable since legacy 'title' is documented as title_ar-aliased compat, but worth a comment.",
+    "seed_projects backfill loop runs find() then per-document update — fine for ~9 docs, but for scale a single update_many with $set / aggregation pipeline would be better.",
+    "Frontend Portfolio.jsx pickLocalized() falls back gracefully when one language is missing, but admin form does not enforce non-empty for both titles client-side (backend does via FastAPI Form(...) → 422)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (refactored: uses title_ar/title_en/description_ar/description_en multipart form fields; added test_create_project_optional_description_defaults and test_create_project_requires_titles; asserts agency_name == 'NUVORA' and bilingual fields on seeded projects; reads BASE_URL from REACT_APP_BACKEND_URL or /app/frontend/.env)"
+  ],
+  "success_rate": {"backend": "100% (15/15 pytest)", "frontend": "100% of tested flows pass"},
+  "test_credentials": "admin@mergent.com / Admin@123 (loaded from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created and then deleted one admin-UI test project (TEST_عنوان_UI / TEST_Title_UI / TEST_وصف_UI / TEST_Desc_UI) to verify end-to-end persistence of all 4 bilingual fields. Final state: exactly 9 seeded projects, all with non-empty title_ar/title_en/description_ar/description_en.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test file at /app/backend/tests/backend_test.py now uses bilingual multipart fields. To extend, simply add data={'title_ar':..., 'title_en':..., 'description_ar':..., 'description_en':..., 'market':..., 'category':...} for POST /api/projects. The PUT endpoint accepts any subset of these fields. Frontend lang persists in localStorage key 'mergent_lang' (legacy key retained) with values 'ar' (default) or 'en'. JWT token in localStorage key 'mergent_token'. Floating WhatsApp brand color is rgb(10, 61, 66) (#0A3D42). Footer testids: site-footer, footer-tel-link, footer-mail-link, footer-wa-link, footer-copy. Project card testid pattern: project-card-{id}. Admin ProjectForm testids: project-title-ar-input, project-title-en-input, project-desc-ar-input, project-desc-en-input.",
+  "rca of the issue": "No issues to RCA in this iteration."
+}

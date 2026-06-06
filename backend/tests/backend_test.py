@@ -4,7 +4,18 @@ import io
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://digital-mergent.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+if not BASE_URL:
+    # Read from frontend .env if not in shell env
+    try:
+        with open("/app/frontend/.env") as f:
+            for line in f:
+                if line.startswith("REACT_APP_BACKEND_URL="):
+                    BASE_URL = line.split("=", 1)[1].strip().rstrip("/")
+                    break
+    except Exception:
+        pass
+assert BASE_URL, "REACT_APP_BACKEND_URL must be set"
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "admin@mergent.com"
@@ -47,8 +58,14 @@ def test_projects_seeded(session):
     assert isinstance(items, list)
     assert len(items) >= 9, f"Expected 9 seeded projects, got {len(items)}"
     sample = items[0]
-    for k in ("id", "title", "market", "category", "image_url", "created_at"):
-        assert k in sample
+    for k in ("id", "title", "title_ar", "title_en", "description_ar", "description_en", "market", "category", "image_url", "created_at"):
+        assert k in sample, f"missing field {k} in project"
+    # Bilingual fields non-empty for seeded projects
+    for p in items:
+        assert p["title_ar"], f"title_ar empty for {p['id']}"
+        assert p["title_en"], f"title_en empty for {p['id']}"
+        assert p["description_ar"], f"description_ar empty for {p['id']}"
+        assert p["description_en"], f"description_en empty for {p['id']}"
     # market and category constrained values
     markets = {p["market"] for p in items}
     cats = {p["category"] for p in items}
@@ -61,6 +78,7 @@ def test_settings_defaults(session):
     r = session.get(f"{API}/settings", timeout=15)
     assert r.status_code == 200
     s = r.json()
+    assert s.get("agency_name") == "NUVORA", f"agency_name expected NUVORA, got {s.get('agency_name')}"
     assert s["phone"] == "+1 (608) 979-3938"
     assert s["email"] == "nuvoranuvora760@gmail.com"
     assert s.get("whatsapp")
@@ -81,7 +99,7 @@ def test_auth_me(session, auth_headers):
 
 
 def test_projects_write_requires_auth():
-    r = requests.post(f"{API}/projects", data={"title": "x", "market": "arab", "category": "websites"}, timeout=15)
+    r = requests.post(f"{API}/projects", data={"title_ar": "x", "title_en": "x", "market": "arab", "category": "websites"}, timeout=15)
     assert r.status_code == 401
 
 
@@ -123,26 +141,61 @@ def test_delete_lead(session, auth_headers):
 
 
 # ---------- Project CRUD (admin) ----------
-def test_project_crud(session, auth_headers):
-    # CREATE
+def test_project_crud_bilingual(session, auth_headers):
+    # CREATE with all four bilingual fields
     files = {"file": ("test.png", io.BytesIO(b"\x89PNG\r\n\x1a\nFAKE"), "image/png")}
-    data = {"title": "TEST_Project", "market": "arab", "category": "websites", "live_url": "https://example.com/x"}
+    data = {
+        "title_ar": "TEST_مشروع",
+        "title_en": "TEST_Project",
+        "description_ar": "وصف عربي",
+        "description_en": "English description",
+        "market": "arab",
+        "category": "websites",
+        "live_url": "https://example.com/x",
+    }
     r = session.post(f"{API}/projects", headers=auth_headers, data=data, files=files, timeout=60)
     assert r.status_code == 200, r.text
     proj = r.json()
     pid = proj["id"]
-    assert proj["title"] == "TEST_Project"
+    assert proj["title_ar"] == "TEST_مشروع"
+    assert proj["title_en"] == "TEST_Project"
+    assert proj["description_ar"] == "وصف عربي"
+    assert proj["description_en"] == "English description"
+    assert proj["title"] == "TEST_مشروع"  # legacy compat
     assert proj["image_url"], "image_url should be set after upload"
 
-    # UPDATE
-    r = session.put(f"{API}/projects/{pid}", headers=auth_headers, data={"title": "TEST_Project_Updated"}, timeout=30)
+    # UPDATE title_en independently
+    r = session.put(f"{API}/projects/{pid}", headers=auth_headers, data={"title_en": "TEST_Project_Updated"}, timeout=30)
     assert r.status_code == 200
-    assert r.json()["title"] == "TEST_Project_Updated"
+    updated = r.json()
+    assert updated["title_en"] == "TEST_Project_Updated"
+    assert updated["title_ar"] == "TEST_مشروع"  # unchanged
 
-    # VERIFY persisted via list
+    # UPDATE description_en independently
+    r = session.put(f"{API}/projects/{pid}", headers=auth_headers, data={"description_en": "Updated English desc"}, timeout=30)
+    assert r.status_code == 200
+    assert r.json()["description_en"] == "Updated English desc"
+
+    # UPDATE description_ar independently
+    r = session.put(f"{API}/projects/{pid}", headers=auth_headers, data={"description_ar": "وصف محدث"}, timeout=30)
+    assert r.status_code == 200
+    assert r.json()["description_ar"] == "وصف محدث"
+
+    # UPDATE title_ar (should also sync legacy title)
+    r = session.put(f"{API}/projects/{pid}", headers=auth_headers, data={"title_ar": "TEST_مشروع_محدث"}, timeout=30)
+    assert r.status_code == 200
+    assert r.json()["title_ar"] == "TEST_مشروع_محدث"
+    assert r.json()["title"] == "TEST_مشروع_محدث"
+
+    # VERIFY persisted via list (GET)
     r = session.get(f"{API}/projects", timeout=15)
     found = [p for p in r.json() if p["id"] == pid]
-    assert found and found[0]["title"] == "TEST_Project_Updated"
+    assert found
+    fp = found[0]
+    assert fp["title_ar"] == "TEST_مشروع_محدث"
+    assert fp["title_en"] == "TEST_Project_Updated"
+    assert fp["description_ar"] == "وصف محدث"
+    assert fp["description_en"] == "Updated English desc"
 
     # DELETE
     r = session.delete(f"{API}/projects/{pid}", headers=auth_headers, timeout=15)
@@ -151,6 +204,32 @@ def test_project_crud(session, auth_headers):
     # Verify deleted
     r = session.get(f"{API}/projects", timeout=15)
     assert not any(p["id"] == pid for p in r.json())
+
+
+def test_create_project_optional_description_defaults(session, auth_headers):
+    # POST without description fields → should default to empty string
+    data = {
+        "title_ar": "TEST_NoDesc",
+        "title_en": "TEST_NoDesc_EN",
+        "market": "foreign",
+        "category": "other",
+    }
+    r = session.post(f"{API}/projects", headers=auth_headers, data=data, timeout=30)
+    assert r.status_code == 200, r.text
+    proj = r.json()
+    assert proj["description_ar"] == ""
+    assert proj["description_en"] == ""
+    # Cleanup
+    session.delete(f"{API}/projects/{proj['id']}", headers=auth_headers, timeout=15)
+
+
+def test_create_project_requires_titles(session, auth_headers):
+    # Missing title_en → should 422
+    r = session.post(f"{API}/projects", headers=auth_headers, data={"title_ar": "x", "market": "arab", "category": "websites"}, timeout=15)
+    assert r.status_code == 422, f"expected 422, got {r.status_code}: {r.text}"
+    # Missing title_ar → should 422
+    r = session.post(f"{API}/projects", headers=auth_headers, data={"title_en": "x", "market": "arab", "category": "websites"}, timeout=15)
+    assert r.status_code == 422
 
 
 # ---------- Settings update + logo ----------

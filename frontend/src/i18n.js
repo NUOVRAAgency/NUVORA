@@ -48,7 +48,7 @@ export const dict = {
     },
     footer: {
       tag: "نصمم رقمياً، ونرفع علامتك التجارية إلى آفاق جديدة",
-      copy: "© 2026 mergent. جميع الحقوق محفوظة.",
+      copy: "© 2026 NUVORA. جميع الحقوق محفوظة.",
     },
   },
   en: {
@@ -100,7 +100,7 @@ export const dict = {
     },
     footer: {
       tag: "We craft digital, elevate your brand to new horizons.",
-      copy: "© 2026 mergent. All rights reserved.",
+      copy: "© 2026 NUVORA. All rights reserved.",
     },
   },
 };

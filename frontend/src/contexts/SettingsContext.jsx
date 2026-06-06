@@ -4,7 +4,7 @@ import api, { absUrl } from "../lib/api";
 const SettingsContext = createContext(null);
 
 const DEFAULTS = {
-  agency_name: "mergent",
+  agency_name: "NUVORA",
   phone: "+1 (608) 979-3938",
   whatsapp: "+16089793938",
   support_phone: "+1 (608) 979-3938",

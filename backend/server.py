@@ -150,13 +150,13 @@ class LeadIn(BaseModel):
 
 
 # ---------- App ----------
-app = FastAPI(title="Mergent Agency API")
+app = FastAPI(title="NUVORA Agency API")
 api = APIRouter(prefix="/api")
 
 
 @api.get("/")
 async def root():
-    return {"service": "mergent", "status": "ok"}
+    return {"service": "nuvora", "status": "ok"}
 
 
 # ---------- Auth ----------
@@ -193,7 +193,7 @@ async def me(user: dict = Depends(get_current_admin)):
 # ---------- Settings ----------
 DEFAULT_SETTINGS = {
     "id": "site",
-    "agency_name": "mergent",
+    "agency_name": "NUVORA",
     "phone": "+1 (608) 979-3938",
     "whatsapp": "+16089793938",
     "support_phone": "+1 (608) 979-3938",
@@ -259,7 +259,10 @@ async def list_projects():
 
 @api.post("/projects")
 async def create_project(
-    title: str = Form(...),
+    title_ar: str = Form(...),
+    title_en: str = Form(...),
+    description_ar: str = Form(""),
+    description_en: str = Form(""),
     market: str = Form(...),
     category: str = Form(...),
     live_url: str = Form(""),
@@ -267,7 +270,7 @@ async def create_project(
     user: dict = Depends(get_current_admin),
 ):
     image_path = ""
-    if file is not None:
+    if file is not None and file.filename:
         ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "bin").lower()
         path = f"{APP_NAME}/projects/{uuid.uuid4()}.{ext}"
         data = await file.read()
@@ -275,7 +278,11 @@ async def create_project(
         image_path = result["path"]
     doc = {
         "id": str(uuid.uuid4()),
-        "title": title,
+        "title_ar": title_ar,
+        "title_en": title_en,
+        "description_ar": description_ar or "",
+        "description_en": description_en or "",
+        "title": title_ar,  # legacy compat
         "market": market,
         "category": category,
         "live_url": live_url or "",
@@ -289,7 +296,10 @@ async def create_project(
 @api.put("/projects/{project_id}")
 async def update_project(
     project_id: str,
-    title: Optional[str] = Form(None),
+    title_ar: Optional[str] = Form(None),
+    title_en: Optional[str] = Form(None),
+    description_ar: Optional[str] = Form(None),
+    description_en: Optional[str] = Form(None),
     market: Optional[str] = Form(None),
     category: Optional[str] = Form(None),
     live_url: Optional[str] = Form(None),
@@ -300,15 +310,22 @@ async def update_project(
     if not existing:
         raise HTTPException(status_code=404, detail="Project not found")
     update = {}
-    if title is not None:
-        update["title"] = title
+    if title_ar is not None:
+        update["title_ar"] = title_ar
+        update["title"] = title_ar
+    if title_en is not None:
+        update["title_en"] = title_en
+    if description_ar is not None:
+        update["description_ar"] = description_ar
+    if description_en is not None:
+        update["description_en"] = description_en
     if market is not None:
         update["market"] = market
     if category is not None:
         update["category"] = category
     if live_url is not None:
         update["live_url"] = live_url
-    if file is not None:
+    if file is not None and file.filename:
         ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "bin").lower()
         path = f"{APP_NAME}/projects/{uuid.uuid4()}.{ext}"
         data = await file.read()
@@ -367,15 +384,15 @@ async def update_lead_status(lead_id: str, status: str = Form(...), user: dict =
 
 # ---------- Startup ----------
 SEED_PROJECTS = [
-    {"title": "متجر إلكتروني فاخر للأزياء", "market": "arab", "category": "stores", "live_url": "https://example.com/luxury-fashion", "image_path": ""},
-    {"title": "منصة استشارات قانونية", "market": "arab", "category": "websites", "live_url": "https://example.com/legal", "image_path": ""},
-    {"title": "متجر إلكترونيات متقدم", "market": "arab", "category": "stores", "live_url": "https://example.com/electronics", "image_path": ""},
-    {"title": "موقع شركة عقارية", "market": "arab", "category": "websites", "live_url": "https://example.com/realestate", "image_path": ""},
-    {"title": "Premium SaaS Dashboard", "market": "foreign", "category": "websites", "live_url": "https://example.com/saas", "image_path": ""},
-    {"title": "International Cosmetics Store", "market": "foreign", "category": "stores", "live_url": "https://example.com/cosmetics", "image_path": ""},
-    {"title": "Mobile Banking Identity", "market": "foreign", "category": "other", "live_url": "https://example.com/banking", "image_path": ""},
-    {"title": "تطبيق توصيل طلبات", "market": "arab", "category": "other", "live_url": "https://example.com/delivery", "image_path": ""},
-    {"title": "Crypto Trading Platform", "market": "foreign", "category": "websites", "live_url": "https://example.com/crypto", "image_path": ""},
+    {"title_ar": "متجر إلكتروني فاخر للأزياء", "title_en": "Luxury Fashion E-commerce", "description_ar": "متجر إلكتروني فاخر مع تجربة شراء سلسة لعلامة أزياء راقية.", "description_en": "Premium online store with a seamless shopping experience for a high-end fashion brand.", "market": "arab", "category": "stores", "live_url": "https://example.com/luxury-fashion"},
+    {"title_ar": "منصة استشارات قانونية", "title_en": "Legal Consultation Platform", "description_ar": "منصة احترافية لحجز الاستشارات القانونية وإدارة العملاء.", "description_en": "Professional platform for booking legal consultations and managing clients.", "market": "arab", "category": "websites", "live_url": "https://example.com/legal"},
+    {"title_ar": "متجر إلكترونيات متقدم", "title_en": "Advanced Electronics Store", "description_ar": "متجر إلكترونيات بتجربة بحث ذكية وخيارات دفع متعددة.", "description_en": "Electronics store with smart search and multiple payment options.", "market": "arab", "category": "stores", "live_url": "https://example.com/electronics"},
+    {"title_ar": "موقع شركة عقارية", "title_en": "Real Estate Corporate Website", "description_ar": "موقع شركة عقارية مع قوائم تفاعلية وخريطة مشاريع.", "description_en": "Real estate corporate website with interactive listings and a project map.", "market": "arab", "category": "websites", "live_url": "https://example.com/realestate"},
+    {"title_ar": "لوحة تحكم SaaS متميزة", "title_en": "Premium SaaS Dashboard", "description_ar": "لوحة تحكم برمجية متقدمة مع تحليلات في الوقت الفعلي.", "description_en": "Advanced product dashboard with real-time analytics.", "market": "foreign", "category": "websites", "live_url": "https://example.com/saas"},
+    {"title_ar": "متجر مستحضرات تجميل عالمي", "title_en": "International Cosmetics Store", "description_ar": "تجربة تسوق راقية لعلامة تجميل عالمية متعددة العملات.", "description_en": "Elevated shopping experience for a global cosmetics brand with multi-currency support.", "market": "foreign", "category": "stores", "live_url": "https://example.com/cosmetics"},
+    {"title_ar": "هوية تطبيق مصرفي", "title_en": "Mobile Banking Identity", "description_ar": "هوية بصرية وتجربة تطبيق مصرفي حديث.", "description_en": "Brand identity and mobile experience for a modern banking app.", "market": "foreign", "category": "other", "live_url": "https://example.com/banking"},
+    {"title_ar": "تطبيق توصيل طلبات", "title_en": "Food Delivery App", "description_ar": "تطبيق توصيل مع تتبع مباشر وتجربة سلسة للمستخدم.", "description_en": "Delivery app with live order tracking and a smooth user experience.", "market": "arab", "category": "other", "live_url": "https://example.com/delivery"},
+    {"title_ar": "منصة تداول العملات الرقمية", "title_en": "Crypto Trading Platform", "description_ar": "منصة تداول متطورة مع مخططات احترافية وأمان مصرفي.", "description_en": "Sophisticated trading platform with pro charts and bank-grade security.", "market": "foreign", "category": "websites", "live_url": "https://example.com/crypto"},
 ]
 
 PORTFOLIO_IMAGES = [
@@ -418,9 +435,29 @@ async def seed_settings():
     if not existing:
         await db.settings.insert_one(DEFAULT_SETTINGS.copy())
         logger.info("Seeded default settings")
+    elif existing.get("agency_name") in (None, "", "mergent"):
+        await db.settings.update_one({"id": "site"}, {"$set": {"agency_name": "NUVORA"}})
+        logger.info("Migrated agency_name to NUVORA")
 
 
 async def seed_projects():
+    # Remove legacy demo seeds (those with image_external_url) so we can re-seed with bilingual data
+    legacy = await db.projects.count_documents({"image_external_url": {"$exists": True}, "title_ar": {"$exists": False}})
+    if legacy > 0:
+        await db.projects.delete_many({"image_external_url": {"$exists": True}, "title_ar": {"$exists": False}})
+        logger.info(f"Removed {legacy} legacy seed projects (no bilingual fields)")
+    # Backfill bilingual fields on any project missing them
+    async for doc in db.projects.find({"$or": [{"title_ar": {"$exists": False}}, {"title_en": {"$exists": False}}]}):
+        base_title = doc.get("title") or doc.get("title_ar") or "Project"
+        await db.projects.update_one(
+            {"id": doc["id"]},
+            {"$set": {
+                "title_ar": doc.get("title_ar") or base_title,
+                "title_en": doc.get("title_en") or base_title,
+                "description_ar": doc.get("description_ar") or "",
+                "description_en": doc.get("description_en") or "",
+            }},
+        )
     count = await db.projects.count_documents({})
     if count > 0:
         return
@@ -429,7 +466,11 @@ async def seed_projects():
     for i, p in enumerate(SEED_PROJECTS):
         docs.append({
             "id": str(uuid.uuid4()),
-            "title": p["title"],
+            "title_ar": p["title_ar"],
+            "title_en": p["title_en"],
+            "title": p["title_ar"],
+            "description_ar": p["description_ar"],
+            "description_en": p["description_en"],
             "market": p["market"],
             "category": p["category"],
             "live_url": p["live_url"],
@@ -438,7 +479,7 @@ async def seed_projects():
             "created_at": (now - timedelta(days=i)).isoformat(),
         })
     await db.projects.insert_many(docs)
-    logger.info(f"Seeded {len(docs)} projects")
+    logger.info(f"Seeded {len(docs)} bilingual projects")
 
 
 @app.on_event("startup")

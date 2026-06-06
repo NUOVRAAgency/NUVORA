@@ -154,7 +154,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
     backdrop-filter: blur(4px);
 }
 
-/* WhatsApp floating */
+/* WhatsApp floating - NUVORA brand palette (deep teal + white) */
 .fab-wa {
     position: fixed;
     bottom: 24px;
@@ -163,15 +163,15 @@ h1, h2, h3, h4, h5, h6, .font-display {
     width: 60px;
     height: 60px;
     border-radius: 999px;
-    background: #25D366;
+    background: #0A3D42;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 10px 24px -6px rgba(37,211,102,0.55), 0 0 0 6px rgba(37,211,102,0.12);
-    transition: transform 200ms ease, box-shadow 200ms ease;
+    box-shadow: 0 10px 24px -6px rgba(10,61,66,0.55), 0 0 0 6px rgba(10,61,66,0.10);
+    transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
 }
-.fab-wa:hover { transform: translateY(-3px) scale(1.04); }
+.fab-wa:hover { transform: translateY(-3px) scale(1.04); background:#0d4a50; }
 [dir="ltr"] .fab-wa { left: auto; right: 24px; }
 
 /* Subtle pulsing dot */

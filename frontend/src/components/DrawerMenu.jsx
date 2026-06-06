@@ -31,7 +31,7 @@ export default function DrawerMenu({ open, onClose }) {
         className={`absolute top-0 ${sideClass} h-full w-[86%] max-w-sm bg-white border-[#E0EBED] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(.2,.7,.2,1)] ${open ? "translate-x-0" : slideStart}`}
       >
         <div className="flex items-center justify-between px-6 h-20 border-b border-[#EAF1F2]">
-          <span className="font-display text-2xl text-[#112325]">mergent</span>
+          <span className="font-display text-2xl text-[#112325]">NUVORA</span>
           <button
             data-testid="drawer-close-btn"
             onClick={onClose}

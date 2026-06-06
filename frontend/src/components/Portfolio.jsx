@@ -6,8 +6,15 @@ import { useLang } from "../contexts/LangContext";
 const MARKETS = ["all", "arab", "foreign"];
 const CATEGORIES = ["all", "websites", "stores", "other"];
 
+const pickLocalized = (p, lang) => {
+  const fallbackTitle = p.title_ar || p.title_en || p.title || "";
+  const title = lang === "en" ? (p.title_en || fallbackTitle) : (p.title_ar || fallbackTitle);
+  const desc = lang === "en" ? (p.description_en || p.description_ar || "") : (p.description_ar || p.description_en || "");
+  return { title, desc };
+};
+
 export default function Portfolio() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [items, setItems] = useState([]);
   const [market, setMarket] = useState("all");
   const [category, setCategory] = useState("all");
@@ -81,40 +88,44 @@ export default function Portfolio() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {filtered.map((p) => (
-                <a
-                  key={p.id}
-                  href={p.live_url || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid={`project-card-${p.id}`}
-                  className="proj-card group block"
-                >
-                  <div className="aspect-[16/10] overflow-hidden bg-[#EAF1F2]">
-                    {p.image_url ? (
-                      <img
-                        src={p.image_url.startsWith("http") ? p.image_url : absUrl(p.image_url)}
-                        alt={p.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full grid place-items-center text-[#3a5358] font-display text-3xl">{p.title.slice(0, 1)}</div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <div className="flex items-center gap-2 text-xs text-[#3a5358] mb-2">
-                      <span className="px-2 py-1 rounded-md bg-[#E6F2F5] text-[#0A3D42] font-medium">{t.portfolio.market[p.market] || p.market}</span>
-                      <span className="px-2 py-1 rounded-md bg-[#F1F6F7] text-[#3a5358] font-medium">{t.portfolio.category[p.category] || p.category}</span>
+              {filtered.map((p) => {
+                const { title, desc } = pickLocalized(p, lang);
+                return (
+                  <a
+                    key={p.id}
+                    href={p.live_url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid={`project-card-${p.id}`}
+                    className="proj-card group block"
+                  >
+                    <div className="aspect-[16/10] overflow-hidden bg-[#EAF1F2]">
+                      {p.image_url ? (
+                        <img
+                          src={p.image_url.startsWith("http") ? p.image_url : absUrl(p.image_url)}
+                          alt={title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full grid place-items-center text-[#3a5358] font-display text-3xl">{(title || "").slice(0, 1)}</div>
+                      )}
                     </div>
-                    <h3 className="font-display text-xl text-[#112325] leading-snug">{p.title}</h3>
-                    <div className="mt-3 inline-flex items-center gap-2 text-[#0A3D42] font-semibold text-sm">
-                      <span>{t.portfolio.visit}</span>
-                      <ExternalLink className="w-4 h-4" />
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 text-xs text-[#3a5358] mb-2">
+                        <span className="px-2 py-1 rounded-md bg-[#E6F2F5] text-[#0A3D42] font-medium">{t.portfolio.market[p.market] || p.market}</span>
+                        <span className="px-2 py-1 rounded-md bg-[#F1F6F7] text-[#3a5358] font-medium">{t.portfolio.category[p.category] || p.category}</span>
+                      </div>
+                      <h3 className="font-display text-xl text-[#112325] leading-snug">{title}</h3>
+                      {desc && <p className="mt-2 text-sm text-[#3a5358] leading-relaxed line-clamp-2">{desc}</p>}
+                      <div className="mt-3 inline-flex items-center gap-2 text-[#0A3D42] font-semibold text-sm">
+                        <span>{t.portfolio.visit}</span>
+                        <ExternalLink className="w-4 h-4" />
+                      </div>
                     </div>
-                  </div>
-                </a>
-              ))}
+                  </a>
+                );
+              })}
             </div>
           )}
         </div>

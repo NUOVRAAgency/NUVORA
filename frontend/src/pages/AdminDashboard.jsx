@@ -16,7 +16,7 @@ const CATS = [
   { v: "other", l: "أخرى" },
 ];
 
-const blankProject = { title: "", market: "arab", category: "websites", live_url: "", file: null };
+const blankProject = { title_ar: "", title_en: "", description_ar: "", description_en: "", market: "arab", category: "websites", live_url: "", file: null };
 
 function ProjectForm({ initial, onSave, onCancel, busy }) {
   const [form, setForm] = useState({ ...blankProject, ...initial });
@@ -28,9 +28,25 @@ function ProjectForm({ initial, onSave, onCancel, busy }) {
       onSubmit={(e) => { e.preventDefault(); onSave(form); }}
       data-testid="project-form"
     >
-      <div>
-        <label className="block text-sm font-semibold mb-1">اسم المشروع</label>
-        <input data-testid="project-title-input" required value={form.title} onChange={handle("title")} className="light-input w-full" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-semibold mb-1">اسم المشروع (عربي)</label>
+          <input data-testid="project-title-ar-input" required value={form.title_ar} onChange={handle("title_ar")} className="light-input w-full" dir="rtl" />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1">Project Name (English)</label>
+          <input data-testid="project-title-en-input" required value={form.title_en} onChange={handle("title_en")} className="light-input w-full" dir="ltr" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-semibold mb-1">وصف قصير (عربي)</label>
+          <textarea data-testid="project-desc-ar-input" value={form.description_ar} onChange={handle("description_ar")} rows={3} className="light-input w-full resize-y" dir="rtl" />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1">Short Description (English)</label>
+          <textarea data-testid="project-desc-en-input" value={form.description_en} onChange={handle("description_en")} rows={3} className="light-input w-full resize-y" dir="ltr" />
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -100,7 +116,10 @@ export default function AdminDashboard() {
     setBusy(true);
     try {
       const fd = new FormData();
-      fd.append("title", form.title);
+      fd.append("title_ar", form.title_ar);
+      fd.append("title_en", form.title_en);
+      fd.append("description_ar", form.description_ar || "");
+      fd.append("description_en", form.description_en || "");
       fd.append("market", form.market);
       fd.append("category", form.category);
       fd.append("live_url", form.live_url || "");
@@ -167,7 +186,7 @@ export default function AdminDashboard() {
       <header className="bg-white border-b border-[#EAF1F2] sticky top-0 z-30">
         <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#0A3D42] text-white grid place-items-center font-display">M</div>
+            <div className="w-9 h-9 rounded-xl bg-[#0A3D42] text-white grid place-items-center font-display">N</div>
             <span className="font-display text-lg text-[#112325]">لوحة التحكم</span>
           </div>
           <div className="flex items-center gap-2">
@@ -210,10 +229,11 @@ export default function AdminDashboard() {
               {projects.map((p) => (
                 <div key={p.id} className="admin-card overflow-hidden" data-testid={`admin-project-${p.id}`}>
                   <div className="aspect-[16/10] bg-[#F1F6F7] overflow-hidden">
-                    {p.image_url ? <img src={p.image_url.startsWith("http") ? p.image_url : absUrl(p.image_url)} alt={p.title} className="w-full h-full object-cover" /> : <div className="w-full h-full grid place-items-center text-[#3a5358]"><ImageIcon className="w-8 h-8" /></div>}
+                    {p.image_url ? <img src={p.image_url.startsWith("http") ? p.image_url : absUrl(p.image_url)} alt={p.title_ar || p.title} className="w-full h-full object-cover" /> : <div className="w-full h-full grid place-items-center text-[#3a5358]"><ImageIcon className="w-8 h-8" /></div>}
                   </div>
                   <div className="p-4">
-                    <div className="font-semibold text-[#112325]">{p.title}</div>
+                    <div className="font-semibold text-[#112325]">{p.title_ar || p.title}</div>
+                    <div className="text-xs text-[#3a5358]" dir="ltr">{p.title_en}</div>
                     <div className="text-xs text-[#3a5358] mt-1">{p.market} / {p.category}</div>
                     {p.live_url && <a href={p.live_url} target="_blank" rel="noreferrer" className="text-xs text-[#0A3D42] underline mt-1 inline-block" dir="ltr">{p.live_url}</a>}
                     <div className="mt-3 flex gap-2">

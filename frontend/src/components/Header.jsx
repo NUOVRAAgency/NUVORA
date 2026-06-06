@@ -24,8 +24,8 @@ export default function Header() {
               <img src={logoUrl} alt={settings.agency_name} className="h-9 md:h-10 w-auto" onError={() => setLogoBroken(true)} />
             ) : (
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-xl bg-[#0A3D42] text-white font-display text-lg shadow-md">M</span>
-                <span className="font-display text-xl md:text-2xl text-[#112325] tracking-tight" data-testid="brand-name">{settings.agency_name || "mergent"}</span>
+                <span className="inline-flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-xl bg-[#0A3D42] text-white font-display text-lg shadow-md">N</span>
+                <span className="font-display text-xl md:text-2xl text-[#112325] tracking-tight" data-testid="brand-name">{settings.agency_name || "NUVORA"}</span>
               </div>
             )}
           </a>
