@@ -21,3 +21,10 @@ backend/uploads/
 .DS_Store
 .idea/
 .vscode/
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
