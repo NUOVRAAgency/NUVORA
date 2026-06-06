@@ -34,6 +34,13 @@ Build a premium, production-ready full-stack web app for a digital agency named 
 - ✅ Admin dashboard: login, projects CRUD with image upload, settings editor + logo upload, leads inbox table.
 - ✅ Tests passing: backend 13/13 (pytest), frontend Playwright flows verified.
 
+## Updated (2026-06-06 — Iteration 2: NUVORA rebrand)
+- ✅ Global rename to **NUVORA** (header, drawer, admin shell, public/index.html title, footer copyright, default settings).
+- ✅ Floating WhatsApp button color changed from green to deep teal `#0A3D42` (NUVORA brand).
+- ✅ Footer rebuilt as minimalist: brand block + 3 clickable contact rows (`tel:`, `mailto:`, `https://wa.me/`) with tight, sleek small copyright row.
+- ✅ Bilingual portfolio schema (`title_ar`, `title_en`, `description_ar`, `description_en`); admin ProjectForm exposes all 4 fields; portfolio cards swap language on toggle.
+- ✅ Tests passing: backend 15/15 (pytest), Playwright e2e clean (no UI bugs, no design issues).
+
 ## Test Credentials
 See `/app/memory/test_credentials.md`.
 
