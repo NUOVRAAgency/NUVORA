@@ -1,1 +1,9 @@
+{
+  "build": {
+    "framework": "python"
+  },
+  "deploy": {
+    "command": "python server.py"
+  }
+}
 
